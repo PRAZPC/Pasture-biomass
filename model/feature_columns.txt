@@ -1,0 +1,13 @@
+Pre_GSHH_NDVI
+Height_Ave_cm
+State_Encoded
+Species_Encoded
+Month
+DayOfYear
+Season
+NDVI_Height
+Height_Log
+Month_Sin
+Month_Cos
+Height_NDVI_Sum
+Height_NDVI_Diff

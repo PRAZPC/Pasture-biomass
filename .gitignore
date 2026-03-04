@@ -1,0 +1,90 @@
+# ───────────────────────────────────────────
+# Python
+# ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ───────────────────────────────────────────
+# Virtual environment
+# ───────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ───────────────────────────────────────────
+# Trained model artifacts (too large for git)
+# ───────────────────────────────────────────
+saved_models/*.pkl
+saved_models/*.json
+saved_models/*.pt
+saved_models/*.pth
+saved_models/*.h5
+saved_models/*.onnx
+model/*.pkl
+model/*.pt
+model/*.pth
+
+# ───────────────────────────────────────────
+# Dataset images (large binary files)
+# ───────────────────────────────────────────
+Dataset/train/
+Dataset/test/
+
+# ───────────────────────────────────────────
+# User-uploaded images (runtime files)
+# ───────────────────────────────────────────
+app/static/uploads/*.jpg
+app/static/uploads/*.jpeg
+app/static/uploads/*.png
+app/static/uploads/*.webp
+
+# ───────────────────────────────────────────
+# Plots / generated outputs
+# ───────────────────────────────────────────
+plots/*.png
+plots/*.jpg
+plots/*.pdf
+
+# ───────────────────────────────────────────
+# Joblib / sklearn cache
+# ───────────────────────────────────────────
+cachedir/
+
+# ───────────────────────────────────────────
+# IDE / editor files
+# ───────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.swp
+*.swo
+
+# ───────────────────────────────────────────
+# OS files
+# ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ───────────────────────────────────────────
+# Jupyter notebooks (optional — keep if needed)
+# ───────────────────────────────────────────
+# *.ipynb
+.ipynb_checkpoints/
+
+# ───────────────────────────────────────────
+# Logs & temp files
+# ───────────────────────────────────────────
+*.log
+tmp_rovodev_*

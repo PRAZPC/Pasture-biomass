@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Biomass Estimator | Upload{% endblock %}
+
+{% block content %}
+<header class="hero">
+    <p class="kicker">FASTAPI + JINJA</p>
+    <h1>Biomass Estimator</h1>
+    <p class="hero-copy">Upload a pasture image and run your saved trained model without retraining.</p>
+</header>
+
+<section class="card status-card">
+    <h2>Model Status</h2>
+    <div class="status-grid">
+        <div>
+            <p class="label">Model file</p>
+            <p class="mono">{{ model_path }}</p>
+        </div>
+        <div>
+            <p class="label">Preprocessor file</p>
+            <p class="mono">{{ preprocessor_path }}</p>
+        </div>
+    </div>
+    {% if model_ready %}
+    <p class="ok">Model artifact found and ready for inference.</p>
+    {% else %}
+    <p class="warn">Model artifact not found. Train once and save it to the shown path.</p>
+    {% endif %}
+</section>
+
+<section class="card">
+    <h2>Upload Image</h2>
+    <form action="/predict" method="post" enctype="multipart/form-data" class="upload-form">
+        <label class="file-input-wrap">
+            <span>Select image</span>
+            <input type="file" name="file" accept=".jpg,.jpeg,.png,.webp" required>
+        </label>
+        <button type="submit">Estimate Biomass</button>
+    </form>
+</section>
+
+{% if uploaded_image or error %}
+<section class="card">
+    <h2>Prediction Result</h2>
+    {% if uploaded_filename %}
+    <p><strong>File:</strong> {{ uploaded_filename }}</p>
+    {% endif %}
+
+    {% if uploaded_image %}
+    <img src="{{ uploaded_image }}" alt="Uploaded image preview" class="preview">
+    {% endif %}
+
+    {% if prediction is not none %}
+    <p class="result">Estimated biomass: {{ '%.4f'|format(prediction) }}</p>
+    {% endif %}
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
