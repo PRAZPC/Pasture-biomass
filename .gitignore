@@ -36,8 +36,7 @@ model/*.pth
 # ───────────────────────────────────────────
 # Dataset images (large binary files)
 # ───────────────────────────────────────────
-Dataset/train/
-Dataset/test/
+
 
 # ───────────────────────────────────────────
 # User-uploaded images (runtime files)
