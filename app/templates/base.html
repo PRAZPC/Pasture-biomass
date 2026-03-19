@@ -11,5 +11,23 @@
 <main class="page">
     {% block content %}{% endblock %}
 </main>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    const fileSelected = document.getElementById('file-selected');
+    const fileName = document.getElementById('file-name');
+    
+    if (fileInput && fileSelected && fileName) {
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileSelected.style.display = 'flex';
+                fileName.textContent = this.files[0].name;
+            } else {
+                fileSelected.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>

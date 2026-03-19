@@ -1,62 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}Biomass Estimator | Upload{% endblock %}
+{% block title %}Biomass Estimator{% endblock %}
 
 {% block content %}
 <header class="hero">
-    <p class="kicker">FASTAPI + JINJA</p>
+    <span class="hero-badge">🌱 AI-Powered</span>
     <h1>Biomass Estimator</h1>
-    <p class="hero-copy">Upload a pasture image and run your saved trained model without retraining.</p>
+    <p class="hero-description">Upload a pasture image and get instant biomass predictions.</p>
 </header>
 
-<section class="card status-card">
-    <h2>Model Status</h2>
+<section class="card">
+    <h2>📊 Model Status</h2>
     <div class="status-grid">
-        <div>
-            <p class="label">Model file</p>
-            <p class="mono">{{ model_path }}</p>
+        <div class="status-item">
+            <div class="status-label">Model File</div>
+            <div class="status-value">{{ model_path }}</div>
         </div>
-        <div>
-            <p class="label">Preprocessor file</p>
-            <p class="mono">{{ preprocessor_path }}</p>
+        <div class="status-item">
+            <div class="status-label">Preprocessor</div>
+            <div class="status-value">{{ preprocessor_path }}</div>
         </div>
     </div>
     {% if model_ready %}
-    <p class="ok">Model artifact found and ready for inference.</p>
+    <div class="status-badge ready">✅ Model Ready</div>
     {% else %}
-    <p class="warn">Model artifact not found. Train once and save it to the shown path.</p>
+    <div class="status-badge not-ready">⚠️ Model Not Found - Run training first</div>
     {% endif %}
 </section>
 
 <section class="card">
-    <h2>Upload Image</h2>
+    <h2>📤 Upload Image</h2>
     <form action="/predict" method="post" enctype="multipart/form-data" class="upload-form">
-        <label class="file-input-wrap">
-            <span>Select image</span>
+        <div class="dropzone">
+            <div class="dropzone-icon">🖼️</div>
+            <p class="dropzone-text"><strong>Click to upload</strong> or drag and drop</p>
+            <p class="dropzone-hint">JPG, PNG, or WEBP (max 10MB)</p>
             <input type="file" name="file" accept=".jpg,.jpeg,.png,.webp" required>
-        </label>
-        <button type="submit">Estimate Biomass</button>
+        </div>
+        <div id="file-selected" class="file-selected" style="display: none;">
+            <span>📄</span>
+            <span id="file-name" class="file-name"></span>
+            <span>✓</span>
+        </div>
+        <button type="submit" class="btn btn-primary" {% if not model_ready %}disabled{% endif %}>
+            ⚡ Estimate Biomass
+        </button>
     </form>
 </section>
 
 {% if uploaded_image or error %}
-<section class="card">
-    <h2>Prediction Result</h2>
-    {% if uploaded_filename %}
-    <p><strong>File:</strong> {{ uploaded_filename }}</p>
-    {% endif %}
-
-    {% if uploaded_image %}
-    <img src="{{ uploaded_image }}" alt="Uploaded image preview" class="preview">
-    {% endif %}
-
-    {% if prediction is not none %}
-    <p class="result">Estimated biomass: {{ '%.4f'|format(prediction) }}</p>
-    {% endif %}
-
+<section class="card result-card">
+    <h2>📈 Result</h2>
     {% if error %}
-    <p class="error">{{ error }}</p>
+    <div class="error-message">❌ {{ error }}</div>
+    {% else %}
+    <div class="result-preview">
+        {% if uploaded_image %}
+        <div class="result-image">
+            <img src="{{ uploaded_image }}" alt="Uploaded image">
+        </div>
+        {% endif %}
+        <div class="result-details">
+            {% if uploaded_filename %}
+            <p class="result-filename">File: {{ uploaded_filename }}</p>
+            {% endif %}
+            {% if prediction is not none %}
+            <div class="result-value">
+                <div class="result-label">Estimated Biomass</div>
+                <div class="result-number">{{ '%.2f'|format(prediction) }}<span class="result-unit">g</span></div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
 </section>
 {% endif %}
+
+<footer class="footer">
+    Powered by ResNet-50 + XGBoost + LightGBM
+</footer>
 {% endblock %}

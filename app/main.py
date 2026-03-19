@@ -43,7 +43,10 @@ def home(request: Request) -> HTMLResponse:
 
 
 @app.post("/predict", response_class=HTMLResponse)
-def predict_page(request: Request, file: UploadFile = File(...)) -> HTMLResponse:
+def predict_page(
+    request: Request,
+    file: UploadFile = File(...),
+) -> HTMLResponse:
     response = None
     error = None
     try:
@@ -69,7 +72,9 @@ def predict_page(request: Request, file: UploadFile = File(...)) -> HTMLResponse
 
 
 @app.post("/api/predict", response_model=PredictionResponse, tags=["Prediction"])
-def predict_api(file: UploadFile = File(...)) -> PredictionResponse:
+def predict_api(
+    file: UploadFile = File(...),
+) -> PredictionResponse:
     return predict_from_upload(file)
 
 

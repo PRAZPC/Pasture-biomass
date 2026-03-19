@@ -126,7 +126,7 @@ def predict_from_upload(file: UploadFile) -> PredictionResponse:
     validate_upload(file)
     saved_path = save_upload(file)
     try:
-        predicted = predict_biomass(saved_path)
+        predicted = predict_biomass(image_path=saved_path)
     except (ModelNotReadyError, NotImplementedError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
