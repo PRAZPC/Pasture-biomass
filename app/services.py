@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +11,9 @@ from fastapi import HTTPException, UploadFile
 from .config import (
     ALLOWED_CONTENT_TYPES,
     ALLOWED_EXTENSIONS,
+    LEGACY_MODEL_FILE,
+    LEGACY_PREPROCESSOR_FILE,
+    LEGACY_REQUIRED_FILES,
     MAX_UPLOAD_SIZE_BYTES,
     MODEL_FILE,
     PREDICTIONS_FILE,
@@ -26,18 +29,25 @@ def _utc_from_timestamp(ts: float) -> datetime:
 
 
 def model_status() -> ModelStatusResponse:
-    model_exists = MODEL_FILE.exists()
-    pre_exists = PREPROCESSOR_FILE.exists()
+    metadata_model_exists = MODEL_FILE.exists()
+    fold_checkpoint_exists = PREPROCESSOR_FILE.exists()
+    legacy_ready = all(path.exists() for path in LEGACY_REQUIRED_FILES)
+    model_exists = metadata_model_exists or legacy_ready
+    pre_exists = fold_checkpoint_exists or legacy_ready
+    model_path = str(MODEL_FILE if metadata_model_exists else LEGACY_MODEL_FILE)
+    preprocessor_path = str(PREPROCESSOR_FILE if fold_checkpoint_exists else LEGACY_PREPROCESSOR_FILE)
+    model_stat_path = MODEL_FILE if metadata_model_exists else LEGACY_MODEL_FILE
+    preprocessor_stat_path = PREPROCESSOR_FILE if fold_checkpoint_exists else LEGACY_PREPROCESSOR_FILE
     return ModelStatusResponse(
         model_ready=model_exists,
-        model_path=str(MODEL_FILE),
-        preprocessor_path=str(PREPROCESSOR_FILE),
-        model_last_modified_utc=_utc_from_timestamp(MODEL_FILE.stat().st_mtime) if model_exists else None,
-        preprocessor_last_modified_utc=_utc_from_timestamp(PREPROCESSOR_FILE.stat().st_mtime)
+        model_path=model_path,
+        preprocessor_path=preprocessor_path,
+        model_last_modified_utc=_utc_from_timestamp(model_stat_path.stat().st_mtime) if model_exists else None,
+        preprocessor_last_modified_utc=_utc_from_timestamp(preprocessor_stat_path.stat().st_mtime)
         if pre_exists
         else None,
-        model_size_bytes=MODEL_FILE.stat().st_size if model_exists else None,
-        preprocessor_size_bytes=PREPROCESSOR_FILE.stat().st_size if pre_exists else None,
+        model_size_bytes=model_stat_path.stat().st_size if model_exists else None,
+        preprocessor_size_bytes=preprocessor_stat_path.stat().st_size if pre_exists else None,
     )
 
 
@@ -48,6 +58,22 @@ def validate_upload(file: UploadFile) -> None:
 
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported content type. Upload an image file.")
+
+
+def parse_sampling_date(value: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Sampling date must be in YYYY-MM-DD format.") from exc
+
+
+def validate_context(height_cm: float, sampling_date: date) -> None:
+    if height_cm <= 0:
+        raise HTTPException(status_code=400, detail="Height must be greater than 0 cm.")
+    if height_cm > 500:
+        raise HTTPException(status_code=400, detail="Height looks invalid. Enter height in cm.")
+    if sampling_date > date.today():
+        raise HTTPException(status_code=400, detail="Sampling date cannot be in the future.")
 
 
 def save_upload(file: UploadFile) -> Path:
@@ -82,12 +108,20 @@ def _write_history(rows: list[dict[str, Any]]) -> None:
         json.dump(rows, f, indent=2)
 
 
-def record_prediction(filename: str, saved_image: Path, predicted_biomass: float) -> PredictionRecord:
+def record_prediction(
+    filename: str,
+    saved_image: Path,
+    height_cm: float,
+    sampling_date: date,
+    predicted_biomass: float,
+) -> PredictionRecord:
     now = datetime.now(tz=timezone.utc)
     record = PredictionRecord(
         prediction_id=uuid.uuid4().hex,
         filename=filename,
         saved_image=str(saved_image),
+        height_cm=height_cm,
+        sampling_date=sampling_date,
         predicted_biomass=predicted_biomass,
         predicted_at_utc=now,
         model_file=str(MODEL_FILE),
@@ -122,23 +156,32 @@ def delete_upload(filename: str) -> dict[str, str]:
     return {"deleted": safe_name}
 
 
-def predict_from_upload(file: UploadFile) -> PredictionResponse:
+def predict_from_upload(file: UploadFile, height_cm: float, sampling_date: date) -> PredictionResponse:
     validate_upload(file)
+    validate_context(height_cm=height_cm, sampling_date=sampling_date)
     saved_path = save_upload(file)
     try:
-        predicted = predict_biomass(image_path=saved_path)
+        predicted = predict_biomass(
+            image_path=saved_path,
+            height_cm=height_cm,
+            sampling_date=sampling_date,
+        )
     except (ModelNotReadyError, NotImplementedError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     record = record_prediction(
         filename=file.filename or saved_path.name,
         saved_image=saved_path,
+        height_cm=height_cm,
+        sampling_date=sampling_date,
         predicted_biomass=predicted,
     )
     return PredictionResponse(
         prediction_id=record.prediction_id,
         filename=record.filename,
         saved_image=record.saved_image,
+        height_cm=record.height_cm,
+        sampling_date=record.sampling_date,
         predicted_biomass=record.predicted_biomass,
         predicted_at_utc=record.predicted_at_utc,
     )

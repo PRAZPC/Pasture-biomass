@@ -6,7 +6,7 @@
 <header class="hero">
     <span class="hero-badge">🌱 AI-Powered</span>
     <h1>Biomass Estimator</h1>
-    <p class="hero-description">Upload a pasture image and get instant biomass predictions.</p>
+    <p class="hero-description">Upload a pasture image, enter height and sampling date, and get a biomass estimate.</p>
 </header>
 
 <section class="card">
@@ -29,7 +29,7 @@
 </section>
 
 <section class="card">
-    <h2>📤 Upload Image</h2>
+    <h2>📤 Prediction Inputs</h2>
     <form action="/predict" method="post" enctype="multipart/form-data" class="upload-form">
         <div class="dropzone">
             <div class="dropzone-icon">🖼️</div>
@@ -41,6 +41,31 @@
             <span>📄</span>
             <span id="file-name" class="file-name"></span>
             <span>✓</span>
+        </div>
+        <div class="form-grid">
+            <label class="field-group">
+                <span class="field-label">Plant Height (cm)</span>
+                <input
+                    class="field-input"
+                    type="number"
+                    name="height_cm"
+                    min="0.1"
+                    step="0.1"
+                    placeholder="e.g. 14.5"
+                    value="{{ height_cm if height_cm is not none else '' }}"
+                    required
+                >
+            </label>
+            <label class="field-group">
+                <span class="field-label">Sampling Date</span>
+                <input
+                    class="field-input"
+                    type="date"
+                    name="sampling_date"
+                    value="{{ sampling_date if sampling_date else '' }}"
+                    required
+                >
+            </label>
         </div>
         <button type="submit" class="btn btn-primary" {% if not model_ready %}disabled{% endif %}>
             ⚡ Estimate Biomass
@@ -64,6 +89,14 @@
             {% if uploaded_filename %}
             <p class="result-filename">File: {{ uploaded_filename }}</p>
             {% endif %}
+            <div class="result-meta">
+                {% if height_cm is not none %}
+                <p><strong>Height:</strong> {{ '%.2f'|format(height_cm) }} cm</p>
+                {% endif %}
+                {% if sampling_date %}
+                <p><strong>Sampling Date:</strong> {{ sampling_date }}</p>
+                {% endif %}
+            </div>
             {% if prediction is not none %}
             <div class="result-value">
                 <div class="result-label">Estimated Biomass</div>
@@ -77,6 +110,6 @@
 {% endif %}
 
 <footer class="footer">
-    Powered by ResNet-50 + XGBoost + LightGBM
+    Powered by image features plus deployable height/date inputs
 </footer>
 {% endblock %}

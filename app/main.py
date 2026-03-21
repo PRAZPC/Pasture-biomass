@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -18,6 +19,7 @@ from .services import (
     get_prediction,
     list_predictions,
     model_status,
+    parse_sampling_date,
     predict_from_upload,
 )
 
@@ -38,6 +40,8 @@ def home(request: Request) -> HTMLResponse:
             "model_path": status.model_path,
             "preprocessor_path": status.preprocessor_path,
             "model_ready": status.model_ready,
+            "height_cm": None,
+            "sampling_date": None,
         },
     )
 
@@ -46,11 +50,19 @@ def home(request: Request) -> HTMLResponse:
 def predict_page(
     request: Request,
     file: UploadFile = File(...),
+    height_cm: float = Form(...),
+    sampling_date: str = Form(...),
 ) -> HTMLResponse:
     response = None
     error = None
+    parsed_sampling_date: date | None = None
     try:
-        response = predict_from_upload(file)
+        parsed_sampling_date = parse_sampling_date(sampling_date)
+        response = predict_from_upload(
+            file=file,
+            height_cm=height_cm,
+            sampling_date=parsed_sampling_date,
+        )
     except HTTPException as exc:
         error = str(exc.detail)
     except Exception as exc:
@@ -67,6 +79,12 @@ def predict_page(
             "model_path": status.model_path,
             "preprocessor_path": status.preprocessor_path,
             "model_ready": status.model_ready,
+            "height_cm": response.height_cm if response else height_cm,
+            "sampling_date": (
+                response.sampling_date.isoformat()
+                if response
+                else (parsed_sampling_date.isoformat() if parsed_sampling_date else sampling_date)
+            ),
         },
     )
 
@@ -74,8 +92,14 @@ def predict_page(
 @app.post("/api/predict", response_model=PredictionResponse, tags=["Prediction"])
 def predict_api(
     file: UploadFile = File(...),
+    height_cm: float = Form(...),
+    sampling_date: str = Form(...),
 ) -> PredictionResponse:
-    return predict_from_upload(file)
+    return predict_from_upload(
+        file=file,
+        height_cm=height_cm,
+        sampling_date=parse_sampling_date(sampling_date),
+    )
 
 
 @app.get("/api/model/status", response_model=ModelStatusResponse, tags=["Model"])
